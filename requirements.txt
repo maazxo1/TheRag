@@ -1,0 +1,45 @@
+# ─── Core RAG Orchestration ───────────────────────────────────────────────────
+llama-index==0.14.20
+llama-index-core==0.14.20
+llama-index-llms-ollama==0.10.1
+llama-index-embeddings-ollama==0.9.0
+llama-index-vector-stores-chroma==0.5.5
+
+# ─── Vector Database ──────────────────────────────────────────────────────────
+chromadb==1.5.8
+
+# ─── Hybrid Search (BM25) ────────────────────────────────────────────────────
+rank-bm25==0.2.2
+
+# ─── Cross-Encoder Reranking & Embeddings ────────────────────────────────────
+sentence-transformers==3.3.1
+
+# ─── Confidence Scoring ──────────────────────────────────────────────────────
+rouge-score==0.1.2
+
+# ─── Web UI ───────────────────────────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-multipart>=0.0.9
+jinja2>=3.1.0
+
+# ─── Deployment ───────────────────────────────────────────────────────────────
+huggingface-hub==0.28.1
+
+# ─── Auto Re-indexing ─────────────────────────────────────────────────────────
+watchdog==6.0.0
+
+# ─── Document Loading ─────────────────────────────────────────────────────────
+PyMuPDF>=1.24.0
+pypdf==5.1.0
+docx2txt==0.9
+python-pptx>=1.0.0
+
+# ─── HTTP Client (Ollama REST calls) ─────────────────────────────────────────
+requests==2.32.3
+httpx==0.28.1
+
+# ─── Utilities ────────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
+tqdm==4.67.1
+numpy==1.26.4

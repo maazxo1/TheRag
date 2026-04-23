@@ -1,0 +1,78 @@
+# ── Python ─────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# ── Virtual environments ────────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Environment & secrets ───────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Runtime data (auto-generated on first run) ──────────────────────────────────
+data/raw/*
+data/processed/*
+data/vector_store/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/vector_store/.gitkeep
+
+# ── Legacy / cache folders ──────────────────────────────────────────────────────
+chroma_db/
+reranker_cache/*
+!reranker_cache/.gitkeep
+
+# ── Logs ────────────────────────────────────────────────────────────────────────
+logs/*
+!logs/.gitkeep
+*.log
+
+# ── Serialised indexes ──────────────────────────────────────────────────────────
+*.pkl
+
+# ── OS artefacts ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE / editor ────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── Testing ─────────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Evaluation results (source kept, results excluded) ──────────────────────────
+evals/eval_results.json
+
+# ── Claude Code local config ────────────────────────────────────────────────────
+.claude/
+
+# ── Misc ────────────────────────────────────────────────────────────────────────
+*.tmp
+*.bak

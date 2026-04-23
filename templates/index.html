@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheRaG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 1 — UPLOAD
+══════════════════════════════════════════════════════════ -->
+<div id="screen-upload" class="screen">
+
+  <nav class="upload-nav">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
+      <span class="logo-text">TheRaG</span>
+    </div>
+    <div class="nav-badges">
+      <span class="nbadge">{{ llm_model }}</span>
+      <span class="nbadge">{{ embedding_model }}</span>
+      <span class="nbadge green">100% Local</span>
+    </div>
+  </nav>
+
+  <main class="upload-main">
+
+    <div class="upload-hero">
+      <h1 class="hero-title">Your documents,<br><span class="hero-accent">privately answered.</span></h1>
+      <p class="hero-sub">Upload any document and ask questions about it.
+        Answers come entirely from your file — no internet required.</p>
+    </div>
+
+    <div class="upload-card" id="drop-zone">
+      <input type="file" id="file-input" accept=".pdf,.docx,.pptx,.txt,.md" hidden>
+      <div class="drop-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <p class="drop-title">Drop your file here</p>
+      <p class="drop-sub">or <button class="link-btn" onclick="document.getElementById('file-input').click()">browse to upload</button></p>
+      <div class="drop-formats">PDF &nbsp;·&nbsp; DOCX &nbsp;·&nbsp; PPTX &nbsp;·&nbsp; TXT &nbsp;·&nbsp; MD</div>
+
+      <!-- Progress -->
+      <div id="upload-progress" class="upload-progress hidden">
+        <div class="progress-label" id="progress-label">Indexing…</div>
+        <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+      </div>
+      <div id="upload-error" class="upload-error hidden"></div>
+    </div>
+
+    <div class="upload-or">
+      <span>or</span>
+    </div>
+
+    <button class="load-saved-btn" onclick="loadSaved()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Load Saved Index
+    </button>
+
+    <div class="feature-pills">
+      <span class="fpill">BM25 + Vector Search</span>
+      <span class="fpill">Cross-encoder Reranking</span>
+      <span class="fpill">Multi-query Retrieval</span>
+      <span class="fpill">HyDE Embeddings</span>
+      <span class="fpill">Streaming Answers</span>
+    </div>
+
+  </main>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 2 — CHAT
+══════════════════════════════════════════════════════════ -->
+<div id="screen-chat" class="screen hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <div class="sidebar-logo">
+      <div class="logo">
+        <div class="logo-icon sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+        <span class="logo-text">TheRaG</span>
+      </div>
+    </div>
+
+    <!-- Document card -->
+    <div class="sidebar-section">
+      <p class="sidebar-label">Document</p>
+      <div class="doc-card">
+        <div class="doc-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="doc-info">
+          <p class="doc-name" id="sidebar-doc-name">—</p>
+          <p class="doc-stats" id="sidebar-doc-stats">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline settings -->
+    <div class="sidebar-section">
+      <p class="sidebar-label">Pipeline Settings</p>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-name">Multi-query</span>
+          <span class="toggle-desc">Wider recall via rephrased queries</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-mq" onchange="saveSetting('multi_query', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-name">HyDE</span>
+          <span class="toggle-desc">Hypothetical doc embeddings</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-hyde" onchange="saveSetting('hyde', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-name">Reranking</span>
+          <span class="toggle-desc">Cross-encoder re-scoring</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-rerank" onchange="saveSetting('reranking', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Visualization -->
+    <div class="sidebar-section">
+      <p class="sidebar-label">Visualization</p>
+      <button class="viz-btn" onclick="openEmbeddingMap()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="5"  cy="19" r="2"/><circle cx="12" cy="5"  r="2"/><circle cx="19" cy="14" r="2"/>
+          <circle cx="8"  cy="11" r="1.5"/><circle cx="16" cy="9" r="1.5"/>
+          <line x1="5" y1="17" x2="8"  y2="12.5"/>
+          <line x1="10" y1="5.5" x2="14.5" y2="8.5"/>
+          <line x1="17" y1="12" x2="19" y2="12"/>
+          <line x1="9.5" y1="11.5" x2="17" y2="10"/>
+        </svg>
+        Embedding Map
+      </button>
+    </div>
+
+    <!-- New session -->
+    <div class="sidebar-bottom">
+      <button class="new-session-btn" onclick="newSession()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Session
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Main chat area -->
+  <main class="chat-main">
+
+    <!-- Messages -->
+    <div class="messages" id="messages">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <p class="empty-title" id="empty-title">Ready to answer your questions</p>
+        <p class="empty-sub" id="empty-sub">Ask anything about your document below</p>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea
+          id="question-input"
+          class="question-input"
+          placeholder="Ask anything about your document…"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="send-btn" onclick="submitQuestion()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <p class="input-hint">Press <kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line</p>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Embedding visualisation modal — at body level to avoid stacking context issues -->
+<div id="emb-modal" class="emb-overlay hidden" onclick="closeEmbeddingMapOutside(event)">
+  <div class="emb-panel">
+    <div class="emb-header">
+      <span class="emb-title">Embedding Space</span>
+      <span class="emb-level-label">View</span>
+      <div class="emb-dim-toggle">
+        <button class="emb-dim-btn active" id="btn-level-chunks"   onclick="switchEmbLevel('chunks')">Chunks</button>
+        <button class="emb-dim-btn"        id="btn-level-passages" onclick="switchEmbLevel('passages')">Passages</button>
+      </div>
+      <div class="emb-separator"></div>
+      <div class="emb-dim-toggle">
+        <button class="emb-dim-btn active" id="btn-3d" onclick="switchEmbDim('3d')">3D</button>
+        <button class="emb-dim-btn"        id="btn-2d" onclick="switchEmbDim('2d')">2D</button>
+      </div>
+      <button class="emb-close" onclick="closeEmbeddingMap()" title="Close">✕</button>
+    </div>
+    <div class="emb-canvas-wrap" id="emb-canvas-wrap">
+      <canvas id="emb-canvas-2d" class="hidden"></canvas>
+      <div id="emb-canvas-3d"></div>
+      <div class="emb-tooltip hidden" id="emb-tooltip"></div>
+      <div class="emb-loading" id="emb-loading">Loading embeddings…</div>
+    </div>
+    <div class="emb-footer" id="emb-footer"></div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

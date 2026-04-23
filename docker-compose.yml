@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  # ── Ollama — local LLM inference server ─────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: therag-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── Model bootstrap — pulls required models on first start ───────────────────
+  ollama-setup:
+    image: ollama/ollama:latest
+    container_name: therag-ollama-setup
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      /bin/sh -c "
+        ollama pull llama3.2:latest &&
+        ollama pull nomic-embed-text &&
+        echo 'Models ready.'
+      "
+    restart: "no"
+
+  # ── TheRaG — RAG application ────────────────────────────────────────────────
+  therag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: therag-app
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - LLM_MODEL=llama3.2:latest
+      - EMBEDDING_MODEL=nomic-embed-text
+      - PORT=8000
+    volumes:
+      - therag_data:/app/data
+      - therag_cache:/app/reranker_cache
+      - therag_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  ollama_models:
+    driver: local
+  therag_data:
+    driver: local
+  therag_cache:
+    driver: local
+  therag_logs:
+    driver: local

@@ -1,0 +1,134 @@
+[
+  {
+    "id": "q001",
+    "question": "What is small-to-big chunking?",
+    "ground_truth": "Small-to-big chunking uses small child chunks (128 tokens) for retrieval precision and large parent chunks (1024 tokens) for LLM generation context, decoupling retrieval quality from context richness.",
+    "category": "architecture"
+  },
+  {
+    "id": "q002",
+    "question": "How does Reciprocal Rank Fusion work?",
+    "ground_truth": "RRF merges ranked lists from BM25 and vector search by scoring each document as the sum of 1/(k + rank + 1) across all lists, where k=60. Documents appearing in both lists score higher than top-ranked single-list documents.",
+    "category": "retrieval"
+  },
+  {
+    "id": "q003",
+    "question": "What is HyDE?",
+    "ground_truth": "HyDE (Hypothetical Document Embeddings) asks the LLM to write a hypothetical answer paragraph for the query. That paragraph is embedded and used for retrieval instead of the short query, enabling doc-to-doc similarity matching.",
+    "category": "retrieval"
+  },
+  {
+    "id": "q004",
+    "question": "Why is a cross-encoder used for reranking instead of the embedding model?",
+    "ground_truth": "Cross-encoders jointly encode the query and document together, producing finer-grained relevance scores than bi-encoders which encode them separately. Cross-encoders are too slow for first-stage retrieval but ideal for reranking a small candidate set.",
+    "category": "reranking"
+  },
+  {
+    "id": "q005",
+    "question": "What are the three signals in the confidence score?",
+    "ground_truth": "The three signals are: vector similarity (30%) — average cosine similarity of retrieved chunks; LLM self-evaluation (50%) — LLM rates its own answer on a 1-5 scale; and ROUGE-L lexical overlap (20%) — token overlap between answer and context.",
+    "category": "confidence"
+  },
+  {
+    "id": "q006",
+    "question": "What embedding model is used and what dimension are the vectors?",
+    "ground_truth": "nomic-embed-text is used for embeddings, producing 768-dimensional vectors, running locally via Ollama.",
+    "category": "stack"
+  },
+  {
+    "id": "q007",
+    "question": "What is the purpose of multi-query retrieval?",
+    "ground_truth": "Multi-query retrieval generates N alternative phrasings of the user question using the LLM, runs retrieval for each in parallel via ThreadPoolExecutor, then merges and deduplicates results. This improves recall when the user's exact wording doesn't match document language.",
+    "category": "retrieval"
+  },
+  {
+    "id": "q008",
+    "question": "What vector database is used for persistent storage?",
+    "ground_truth": "ChromaDB is used as the persistent vector store, using HNSW indexing with SQLite backend.",
+    "category": "stack"
+  },
+  {
+    "id": "q009",
+    "question": "What token size are the child chunks used for retrieval?",
+    "ground_truth": "Child chunks are 128 tokens, used for retrieval precision.",
+    "category": "architecture"
+  },
+  {
+    "id": "q010",
+    "question": "What token size are the parent chunks passed to the LLM?",
+    "ground_truth": "Parent chunks are 1024 tokens, used for LLM generation context.",
+    "category": "architecture"
+  },
+  {
+    "id": "q011",
+    "question": "What is the RRF constant k and why is it set to 60?",
+    "ground_truth": "The RRF constant k is 60. It prevents top-ranked documents from dominating the fused score.",
+    "category": "retrieval"
+  },
+  {
+    "id": "q012",
+    "question": "What confidence badge is given for a composite score above 0.70?",
+    "ground_truth": "A composite score above 0.70 receives a HIGH badge.",
+    "category": "confidence"
+  },
+  {
+    "id": "q013",
+    "question": "What confidence badge is given for a score below 0.45?",
+    "ground_truth": "A composite score below 0.45 receives a LOW badge.",
+    "category": "confidence"
+  },
+  {
+    "id": "q014",
+    "question": "Which reranker model does TheRaG use?",
+    "ground_truth": "TheRaG uses BAAI/bge-reranker-v2-m3 as the cross-encoder reranker model.",
+    "category": "reranking"
+  },
+  {
+    "id": "q015",
+    "question": "How does HyDE improve retrieval compared to querying with the raw user question?",
+    "ground_truth": "HyDE enables doc-to-doc similarity matching instead of query-to-doc matching. The hypothetical answer paragraph is more similar in style and vocabulary to actual document passages, improving retrieval when the user's wording differs from the document.",
+    "category": "retrieval"
+  },
+  {
+    "id": "q016",
+    "question": "What happens to child chunks after retrieval in the small-to-big strategy?",
+    "ground_truth": "After retrieval, child chunks are expanded to their full parent chunks before being passed to the LLM, so the model sees the full 1024-token context rather than just the 128-token retrieval chunk.",
+    "category": "architecture"
+  },
+  {
+    "id": "q017",
+    "question": "Why does ChromaDB not require re-embedding documents on every startup?",
+    "ground_truth": "ChromaDB persists the embedded vectors on disk, so the index survives across sessions and documents do not need to be re-embedded on every startup.",
+    "category": "stack"
+  },
+  {
+    "id": "q018",
+    "question": "What is the weight of the LLM self-evaluation signal in the confidence score?",
+    "ground_truth": "The LLM self-evaluation signal has a weight of 50 percent in the composite confidence score.",
+    "category": "confidence"
+  },
+  {
+    "id": "q019",
+    "question": "What programming language is used to run multi-query retrieval in parallel?",
+    "ground_truth": "Multi-query retrieval runs in parallel using ThreadPoolExecutor from Python's concurrent.futures module.",
+    "category": "retrieval"
+  },
+  {
+    "id": "q020",
+    "question": "What is the capital of France?",
+    "ground_truth": "Paris is the capital of France.",
+    "category": "out_of_scope"
+  },
+  {
+    "id": "q021",
+    "question": "How many goals did Messi score in the 2022 World Cup?",
+    "ground_truth": "Lionel Messi scored 7 goals in the 2022 FIFA World Cup.",
+    "category": "out_of_scope"
+  },
+  {
+    "id": "q022",
+    "question": "What is the weight of the vector similarity signal in the confidence score?",
+    "ground_truth": "The vector similarity signal has a weight of 30 percent in the composite confidence score.",
+    "category": "confidence"
+  }
+]

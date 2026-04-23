@@ -1,0 +1,40 @@
+/* ── TheRaG custom styles ─────────────────────────────────────────────────── */
+
+/* Message composer — larger, more prominent */
+#chat-input {
+    font-size: 0.9375rem !important;
+    line-height: 1.6 !important;
+}
+
+/* Step icons look cleaner */
+.step-icon { opacity: 0.7; }
+
+/* Source text elements in the sidebar */
+.cl-text-element {
+    font-size: 0.84rem !important;
+    line-height: 1.75 !important;
+    color: hsl(var(--foreground)) !important;
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* Confidence block inside assistant message */
+.conf-block {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    font-size: 0.83rem;
+    line-height: 1.6;
+}
+
+/* Remove Chainlit watermark / footer branding */
+a[href*="chainlit"] { display: none !important; }
