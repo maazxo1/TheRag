@@ -25,6 +25,10 @@ pinned: false
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License"/>
 </p>
 
+<p>
+  <a href="https://huggingface.co/spaces/maazxo1/TheRag"><img src="https://img.shields.io/badge/🤗%20Live%20Demo-Hugging%20Face-yellow" alt="Live Demo on Hugging Face Spaces"/></a>
+</p>
+
 </div>
 
 ---
