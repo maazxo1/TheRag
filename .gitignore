@@ -73,6 +73,9 @@ evals/eval_results.json
 # ── Claude Code local config ────────────────────────────────────────────────────
 .claude/
 
+# ── Images (kept on GitHub, excluded from HF Spaces to avoid LFS requirement) ──
+images/
+
 # ── Misc ────────────────────────────────────────────────────────────────────────
 *.tmp
 *.bak
