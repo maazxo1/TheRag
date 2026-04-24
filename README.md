@@ -237,18 +237,67 @@ TheRaG/
 
 ## Deployment on Hugging Face Spaces
 
-TheRaG is compatible with HF Spaces (Docker SDK):
+TheRaG is **fully self-contained** — Ollama runs inside the Docker container so your PC can be off.
 
-1. Fork this repository
-2. Create a new Space → **Docker** SDK
-3. Connect your forked repo
-4. Add these Space secrets:
-   - `OLLAMA_URL` — URL of an externally hosted Ollama instance
-   - `LLM_MODEL` — model name
-   - `EMBEDDING_MODEL` — embedding model name
-5. Set `PORT=7860` (already the Dockerfile default for HF)
+### How it works
 
-> HF Spaces does not provide GPU by default. Use a CPU-compatible model such as `llama3.2:1b` or `tinyllama` for best performance.
+`start.sh` is the container entrypoint. On every cold start it:
+1. Launches an Ollama daemon in the background
+2. Pulls the configured LLM and embedding models (~2.3 GB total)
+3. Starts the FastAPI application
+
+> **First start takes ~5–10 minutes** while models download. Subsequent queries are fast.
+
+### Steps
+
+**1. Push your code to GitHub** (see Quick Start above)
+
+**2. Create a Hugging Face account** at [huggingface.co](https://huggingface.co)
+
+**3. Create a new Space**
+- Profile → New Space
+- SDK: **Docker**
+- Visibility: Public or Private
+- Hardware: **CPU Basic** (free) is sufficient
+
+**4. Link your GitHub repo**
+- In the Space → Settings → Repository → connect your GitHub repo
+
+**OR push directly via git:**
+```bash
+# Add the HF Space as a remote
+git remote add hf https://huggingface.co/spaces/YOUR-USERNAME/TheRaG
+
+# Push — this triggers a build automatically
+git push hf main
+```
+> Use your HF username + an [Access Token](https://huggingface.co/settings/tokens) (write scope) as the password.
+
+**5. Set Space variables** (Settings → Variables and Secrets)
+
+| Name | Value | Notes |
+|---|---|---|
+| `LLM_MODEL` | `llama3.2:latest` | Or `llama3.2:1b` for faster cold starts |
+| `EMBEDDING_MODEL` | `nomic-embed-text` | Required |
+
+`OLLAMA_URL` does **not** need to be set — it defaults to `localhost` and the bundled Ollama starts automatically.
+
+**6. Watch the build logs** — when you see `Application startup complete` the app is live at:
+```
+https://YOUR-USERNAME-TheRaG.hf.space
+```
+
+### Hardware recommendation
+
+| Tier | RAM | Cold start | Query speed |
+|---|---|---|---|
+| CPU Basic (free) | 16 GB | ~8 min | ~3–5 tok/s |
+| CPU Upgrade | 32 GB | ~5 min | ~5–8 tok/s |
+| T4 GPU | 15 GB VRAM | ~3 min | ~30–50 tok/s |
+
+> **Free tier note:** HF Spaces sleeps after ~30 min of inactivity. The next visit wakes it up and re-downloads models. For always-on deployment, upgrade to a persistent Space or use the paid hardware tier.
+
+> **Persistent storage:** On free tier, ingested documents are wiped on restart. To keep data between restarts, enable [Spaces Persistent Storage](https://huggingface.co/docs/hub/spaces-storage) in your Space settings.
 
 ---
 
