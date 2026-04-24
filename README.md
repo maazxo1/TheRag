@@ -1,12 +1,3 @@
----
-title: TheRaG
-emoji: 🔍
-colorFrom: blue
-colorTo: purple
-sdk: docker
-pinned: false
----
-
 <div align="center">
 
 <h1>TheRaG</h1>
