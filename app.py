@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import config
 from entrypoint.ingest import ingest_from_file, load_existing_index
@@ -26,6 +27,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 _executor = ThreadPoolExecutor(max_workers=4)
+_ingest_lock = asyncio.Lock()
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
 _state: dict = {
     "index": None, "bm25": None, "child_nodes": None,
     "parent_node_map": None, "doc_name": None, "ready": False,
@@ -66,32 +69,60 @@ async def status():
 
 @app.post("/api/ingest/file")
 async def ingest_file_endpoint(file: UploadFile = File(...)):
-    suffix = Path(file.filename or "upload.bin").suffix or ".bin"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(await file.read())
-        tmp_path = tmp.name
+    if _ingest_lock.locked():
+        raise HTTPException(status_code=409, detail="An upload is already in progress. Please wait.")
 
+    # Stream upload to a temp file in 64 KB chunks — rejects oversized files
+    # without loading the whole thing into memory first.
+    suffix = Path(file.filename or "upload.bin").suffix or ".bin"
+    tmp_path: str | None = None
     try:
-        loop = asyncio.get_running_loop()
-        index, bm25, child_nodes, parent_node_map = await loop.run_in_executor(
-            _executor, lambda: ingest_from_file(tmp_path)
-        )
-        _state.update({
-            "index": index, "bm25": bm25,
-            "child_nodes": child_nodes, "parent_node_map": parent_node_map,
-            "doc_name":   file.filename, "ready": True,
-            "n_parents":  len(parent_node_map),
-            "n_children": len(child_nodes),
-        })
-        return {"ok": True, "doc_name": file.filename,
-                "n_parents": len(parent_node_map), "n_children": len(child_nodes)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp_path = tmp.name
+            total = 0
+            while True:
+                chunk = await file.read(65536)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_UPLOAD_BYTES:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File exceeds the {MAX_UPLOAD_BYTES // (1024*1024)} MB limit."
+                    )
+                tmp.write(chunk)
+    except HTTPException:
+        if tmp_path:
+            try: os.unlink(tmp_path)
+            except OSError: pass
+        raise
+
+    async with _ingest_lock:
+        # Snapshot current state so we can roll back if ingest fails.
+        _prev = {k: _state[k] for k in
+                 ("index", "bm25", "child_nodes", "parent_node_map",
+                  "doc_name", "ready", "n_parents", "n_children")}
+        _state["ready"] = False
         try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+            loop = asyncio.get_running_loop()
+            index, bm25, child_nodes, parent_node_map = await loop.run_in_executor(
+                _executor, lambda: ingest_from_file(tmp_path)
+            )
+            _state.update({
+                "index": index, "bm25": bm25,
+                "child_nodes": child_nodes, "parent_node_map": parent_node_map,
+                "doc_name":   file.filename, "ready": True,
+                "n_parents":  len(parent_node_map),
+                "n_children": len(child_nodes),
+            })
+            return {"ok": True, "doc_name": file.filename,
+                    "n_parents": len(parent_node_map), "n_children": len(child_nodes)}
+        except Exception as e:
+            _state.update(_prev)  # restore previous working state
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            try: os.unlink(tmp_path)
+            except OSError: pass
 
 
 @app.post("/api/ingest/load")
@@ -119,7 +150,7 @@ async def load_existing_endpoint():
 # ── Query (SSE streaming) ─────────────────────────────────────────────────────
 
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=2000)
     settings: dict = {}
 
 
@@ -172,9 +203,19 @@ async def query_endpoint(req: QueryRequest):
     merged = {**_state["settings"], **req.settings}
 
     async def generate():
-        loop  = asyncio.get_running_loop()
-        queue: asyncio.Queue = asyncio.Queue(maxsize=64)
-        DONE  = object()
+        loop      = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()   # unbounded — no deadlock on disconnect
+        cancelled = threading.Event()
+        DONE      = object()
+
+        def _put(item, timeout=10):
+            """Put item on queue; silently drops if cancelled or timeout exceeded."""
+            if cancelled.is_set():
+                return
+            try:
+                asyncio.run_coroutine_threadsafe(queue.put(item), loop).result(timeout=timeout)
+            except Exception:
+                pass
 
         def run_sync():
             try:
@@ -188,26 +229,29 @@ async def query_endpoint(req: QueryRequest):
                     enable_hyde=merged.get("hyde",        config.ENABLE_HYDE),
                     enable_reranking=merged.get("reranking",   config.ENABLE_RERANKING),
                 ):
-                    asyncio.run_coroutine_threadsafe(queue.put(ev), loop).result()
+                    if cancelled.is_set():
+                        return
+                    _put(ev)
             except Exception as exc:
-                asyncio.run_coroutine_threadsafe(
-                    queue.put({"phase": "error", "error": str(exc)}), loop
-                ).result()
+                _put({"phase": "error", "error": str(exc)})
             finally:
-                asyncio.run_coroutine_threadsafe(queue.put(DONE), loop).result()
+                _put(DONE, timeout=5)
 
         _executor.submit(run_sync)
 
-        while True:
-            item = await queue.get()
-            if item is DONE:
-                break
-            phase = item.get("phase")
-            if phase == "retrieved":
-                item = _serialize_retrieved(item)
-            elif phase == "done":
-                item = _serialize_done(item)
-            yield f"data: {json.dumps(item)}\n\n"
+        try:
+            while True:
+                item = await queue.get()
+                if item is DONE:
+                    break
+                phase = item.get("phase")
+                if phase == "retrieved":
+                    item = _serialize_retrieved(item)
+                elif phase == "done":
+                    item = _serialize_done(item)
+                yield f"data: {json.dumps(item)}\n\n"
+        finally:
+            cancelled.set()  # tells run_sync to stop if client disconnected
 
     return StreamingResponse(
         generate(),
@@ -256,7 +300,7 @@ async def embeddings_endpoint():
             except AttributeError:
                 return {"chunks": [], "passages": [], "n_groups": 0, "variance": []}
 
-            result   = coll.get(include=["embeddings", "documents", "metadatas"])
+            result   = coll.get(include=["embeddings", "documents", "metadatas"], limit=2000)
             embs_raw = result.get("embeddings")
             if embs_raw is None or len(embs_raw) == 0:
                 return {"chunks": [], "passages": [], "n_groups": 0, "variance": []}

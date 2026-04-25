@@ -14,12 +14,10 @@ Badge thresholds:
 
 import math
 import re
-import requests
 from rouge_score import rouge_scorer
 
 import config
-
-_session = requests.Session()
+from src.http_session import session as _session
 
 _SELF_EVAL_PROMPT = """\
 You are an answer quality evaluator. Be precise and objective.

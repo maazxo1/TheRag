@@ -26,8 +26,6 @@ from concurrent.futures import ThreadPoolExecutor, wait as _futures_wait
 from datetime import datetime
 from typing import Generator
 
-import requests
-
 import config
 
 from src.pipelines.retrieval_pipeline import HybridRetriever
@@ -36,9 +34,7 @@ from src.pipelines.hyde import hyde_retrieve
 from src.pipelines.reranking_pipeline import rerank_with_scores
 from src.pipelines.chunking_pipeline import expand_to_parents
 from src.pipelines.generation_pipeline import compute_confidence, compute_confidence_fast, format_confidence_md
-
-# Single session reuses TCP connections to Ollama across all LLM calls
-_session = requests.Session()
+from src.http_session import session as _session
 
 # Persistent pool — avoids OS thread creation overhead on every query
 _retrieval_pool = ThreadPoolExecutor(max_workers=3)
@@ -369,6 +365,17 @@ def run_pipeline_streaming(
         },
         "flags": {"multi_query": use_mq, "hyde": use_hyd, "reranking": use_rer},
     }
+
+    if not parents:
+        yield {
+            "phase": "done",
+            **_empty_result(use_mq, use_hyd, use_rer),
+            "answer": (
+                "No relevant passages were found in the document for this question. "
+                "Try rephrasing, or check that the document covers this topic."
+            ),
+        }
+        return
 
     prompt, context = _build_prompt(question, parents)
 

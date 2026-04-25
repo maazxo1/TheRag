@@ -10,12 +10,9 @@ This improves recall without sacrificing precision.
 """
 
 import re
-import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import config
-
-_session = requests.Session()
+from src.http_session import session as _session
 
 
 _MULTI_QUERY_PROMPT = """\
@@ -77,42 +74,22 @@ def multi_query_retrieve(
     n_variants: int = config.MULTI_QUERY_N,
 ) -> list:
     """
-    Generate query variants, retrieve in parallel, merge and deduplicate results.
-
-    Args:
-        query:      original user question
-        retriever:  any object with a .retrieve(query) -> list[node] method
-                    (HybridRetriever or a plain LlamaIndex retriever)
-        top_k:      max results to return after merging
-        n_variants: how many alternative phrasings to generate
-
-    Returns:
-        merged, deduplicated list of nodes ordered by first appearance
-        (earlier = found by more query variants = likely more relevant)
+    Generate query variants, retrieve sequentially, merge and deduplicate results.
+    Sequential retrieval avoids spawning a nested thread pool inside an already-pooled
+    thread — Ollama queues concurrent requests on CPU anyway so parallelism offered
+    no real benefit while adding thread contention.
     """
     top_k = top_k or config.TOP_K_RETRIEVAL
     variants = generate_query_variants(query, n=n_variants)
 
-    # Run all retrievals in parallel
-    all_results: list[list] = [None] * len(variants)
-    with ThreadPoolExecutor(max_workers=len(variants)) as pool:
-        future_to_idx = {
-            pool.submit(retriever.retrieve, q): i
-            for i, q in enumerate(variants)
-        }
-        for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
-            try:
-                all_results[idx] = future.result()
-            except Exception:
-                all_results[idx] = []
-
-    # Count how many variants retrieved each node; nodes agreed upon by more
-    # variants are more likely to be relevant and should rank higher.
     hit_count: dict[str, int] = {}
     node_map: dict[str, object] = {}
-    for result_list in all_results:
-        for node in (result_list or []):
+    for q in variants:
+        try:
+            results = retriever.retrieve(q)
+        except Exception:
+            results = []
+        for node in results:
             nid = node.node_id
             hit_count[nid] = hit_count.get(nid, 0) + 1
             node_map.setdefault(nid, node)

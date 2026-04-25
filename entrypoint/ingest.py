@@ -219,14 +219,14 @@ def ingest_documents(data_dir: str = config.DATA_DIR, force: bool = False):
     corpus = [node.get_content().lower().split() for node in child_nodes]
     bm25 = BM25Okapi(corpus)
 
-    # ── 5. Persist BM25 artefacts ───────────────────────────────────────────────
+    # ── 5. Persist BM25 artefacts (atomic write → rename so a crash mid-write
+    #       never leaves BM25 and ChromaDB in an inconsistent state) ─────────────
     os.makedirs(config.BM25_INDEX_PATH, exist_ok=True)
-    with open(_BM25_PATH, "wb") as f:
-        pickle.dump(bm25, f)
-    with open(_PARENT_PATH, "wb") as f:
-        pickle.dump(parent_node_map, f)
-    with open(_CHILD_PATH, "wb") as f:
-        pickle.dump(child_nodes, f)
+    for path, obj in [(_BM25_PATH, bm25), (_PARENT_PATH, parent_node_map), (_CHILD_PATH, child_nodes)]:
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as f:
+            pickle.dump(obj, f)
+        os.replace(tmp, path)  # atomic on POSIX; best-effort on Windows
     print(f"[Ingest] BM25 index + node maps saved to '{config.BM25_INDEX_PATH}'")
 
     print("[Ingest] Done.\n")

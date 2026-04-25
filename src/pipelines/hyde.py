@@ -11,11 +11,8 @@ prose in the same domain), so doc-to-doc similarity works far better.
 Tradeoff: adds ~500 ms for the generation step. Disable via ENABLE_HYDE=False.
 """
 
-import requests
-
 import config
-
-_session = requests.Session()
+from src.http_session import session as _session
 
 _HYDE_PROMPT = """\
 Write a detailed paragraph that directly answers the question below.
