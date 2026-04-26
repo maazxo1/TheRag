@@ -45,8 +45,7 @@ _state: dict = {
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {
-        "request":         request,
+    return templates.TemplateResponse(request, "index.html", {
         "llm_model":       config.LLM_MODEL,
         "embedding_model": config.EMBEDDING_MODEL,
     })
