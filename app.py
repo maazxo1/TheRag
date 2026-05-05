@@ -1,5 +1,5 @@
 """
-TheRaG — FastAPI server
+AskVault — FastAPI server
 All backend pipeline code is completely unchanged.
 """
 
@@ -22,7 +22,7 @@ import config
 from entrypoint.ingest import ingest_from_file, load_existing_index
 from entrypoint.query import run_pipeline_streaming
 
-app = FastAPI(title="TheRaG")
+app = FastAPI(title="AskVault")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 

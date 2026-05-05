@@ -4,7 +4,7 @@ services:
   # ── Ollama — local LLM inference server ─────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
-    container_name: therag-ollama
+    container_name: askvault-ollama
     restart: unless-stopped
     volumes:
       - ollama_models:/root/.ollama
@@ -20,7 +20,7 @@ services:
   # ── Model bootstrap — pulls required models on first start ───────────────────
   ollama-setup:
     image: ollama/ollama:latest
-    container_name: therag-ollama-setup
+    container_name: askvault-ollama-setup
     depends_on:
       ollama:
         condition: service_healthy
@@ -34,12 +34,12 @@ services:
       "
     restart: "no"
 
-  # ── TheRaG — RAG application ────────────────────────────────────────────────
-  therag:
+  # ── AskVault — RAG application ────────────────────────────────────────────────
+  askvault:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: therag-app
+    container_name: askvault-app
     restart: unless-stopped
     depends_on:
       ollama:
@@ -52,9 +52,9 @@ services:
       - EMBEDDING_MODEL=nomic-embed-text
       - PORT=8000
     volumes:
-      - therag_data:/app/data
-      - therag_cache:/app/reranker_cache
-      - therag_logs:/app/logs
+      - askvault_data:/app/data
+      - askvault_cache:/app/reranker_cache
+      - askvault_logs:/app/logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
       interval: 30s
@@ -65,9 +65,9 @@ services:
 volumes:
   ollama_models:
     driver: local
-  therag_data:
+  askvault_data:
     driver: local
-  therag_cache:
+  askvault_cache:
     driver: local
-  therag_logs:
+  askvault_logs:
     driver: local

@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1>TheRaG</h1>
+<h1>AskVault</h1>
 <p><strong>Your documents, privately answered.</strong></p>
 
 <p>
@@ -27,7 +27,7 @@
 ## Screenshots
 
 <div align="center">
-  <img src="images/2.png" width="780" alt="TheRaG landing page — upload your document"/>
+  <img src="images/2.png" width="780" alt="AskVault landing page — upload your document"/>
   <br/><em>Upload any document to get started</em>
 </div>
 
@@ -128,10 +128,10 @@ Document Upload
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/TheRaG.git
-cd TheRaG
+git clone https://github.com/your-username/AskVault.git
+cd AskVault
 
-# 2. Start all services (Ollama + TheRaG)
+# 2. Start all services (Ollama + AskVault)
 #    First run pulls the LLM and embedding models (~3 GB)
 docker compose up --build
 
@@ -155,8 +155,8 @@ ollama pull llama3.2:latest
 ollama pull nomic-embed-text
 
 # 2. Clone and set up environment
-git clone https://github.com/your-username/TheRaG.git
-cd TheRaG
+git clone https://github.com/your-username/AskVault.git
+cd AskVault
 
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
@@ -203,7 +203,7 @@ Advanced settings (edit `config/settings.py`):
 ## Project Structure
 
 ```
-TheRaG/
+AskVault/
 ├── app.py                    # FastAPI server — routes and state
 ├── config/
 │   └── settings.py           # All tuneable parameters
@@ -241,7 +241,7 @@ TheRaG/
 
 ## Deployment on Hugging Face Spaces
 
-TheRaG is **fully self-contained** — Ollama runs inside the Docker container so your PC can be off.
+AskVault is **fully self-contained** — Ollama runs inside the Docker container so your PC can be off.
 
 ### How it works
 
@@ -270,7 +270,7 @@ TheRaG is **fully self-contained** — Ollama runs inside the Docker container s
 **OR push directly via git:**
 ```bash
 # Add the HF Space as a remote
-git remote add hf https://huggingface.co/spaces/YOUR-USERNAME/TheRaG
+git remote add hf https://huggingface.co/spaces/YOUR-USERNAME/AskVault
 
 # Push — this triggers a build automatically
 git push hf main
@@ -288,7 +288,7 @@ git push hf main
 
 **6. Watch the build logs** — when you see `Application startup complete` the app is live at:
 ```
-https://YOUR-USERNAME-TheRaG.hf.space
+https://YOUR-USERNAME-AskVault.hf.space
 ```
 
 ### Hardware recommendation

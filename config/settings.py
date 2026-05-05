@@ -1,5 +1,5 @@
 """
-Central configuration for TheRaG — all tuneable parameters in one place.
+Central configuration for AskVault — all tuneable parameters in one place.
 Every setting can be overridden by an environment variable of the same name.
 """
 
@@ -46,4 +46,4 @@ CONFIDENCE_WEIGHTS = {
 }
 
 # ─── Chroma Collection ─────────────────────────────────────────────────────────
-CHROMA_COLLECTION = "therag_docs"
+CHROMA_COLLECTION = "askvault_docs"
